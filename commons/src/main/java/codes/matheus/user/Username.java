@@ -37,6 +37,9 @@ public final class Username implements CharSequence {
     }
 
     public void setName(@NotNull String name) {
+        if (!validate(name)) {
+            throw new IllegalArgumentException("username is invalid");
+        }
         this.name = name;
     }
 
