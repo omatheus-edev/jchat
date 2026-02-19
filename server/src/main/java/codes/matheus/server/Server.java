@@ -1,26 +1,23 @@
 package codes.matheus.server;
 
-import codes.matheus.entity.Client;
 import com.jlogm.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.Iterator;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 public final class Server {
     public static final @NotNull Logger log = Logger.create(Server.class);
     private final @NotNull ServerSocketChannel server;
     private final @NotNull Selector selector;
     private final @NotNull WorkerThread thread;
-    private final @NotNull Set<Client> clients = ConcurrentHashMap.newKeySet();
 
     public Server() {
         try {
@@ -29,7 +26,7 @@ public final class Server {
             server.configureBlocking(false);
             this.selector = Selector.open();
             server.register(selector, SelectionKey.OP_ACCEPT);
-            this.thread = new WorkerThread(selector, clients);
+            this.thread = new WorkerThread(selector);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -51,14 +48,23 @@ public final class Server {
                         @Nullable SocketChannel socket = server.accept();
                         if (socket != null) {
                             socket.configureBlocking(false);
-                            log.info("New client joined on server");
                             socket.register(selector, SelectionKey.OP_READ);
                         }
                     }
 
                     if (key.isReadable()) {
                         key.interestOps(key.interestOps() & ~SelectionKey.OP_READ);
-                        thread.submit(key);
+
+                        @NotNull ByteBuffer buffer = ByteBuffer.allocate(1024);
+                        int read = ((SocketChannel) key.channel()).read(buffer);
+                        if (read > 0) {
+                            buffer.flip();
+                            byte[] data = new byte[buffer.remaining()];
+                            buffer.get(data);
+                            thread.submit(key, data);
+                        } else if (read == -1) {
+                            key.channel().close();
+                        }
                     }
                 }
             }

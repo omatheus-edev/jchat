@@ -5,43 +5,40 @@ import codes.matheus.entity.Client;
 import codes.matheus.user.User;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public final class WorkerThread {
     private final @NotNull ExecutorService executor;
     private final @NotNull Selector selector;
-    private final @NotNull Set<Client> clients;
+    private final @NotNull Set<Client> clients = ConcurrentHashMap.newKeySet();
 
-    public WorkerThread(@NotNull Selector selector, @NotNull Set<Client> clients) {
+    public WorkerThread(@NotNull Selector selector) {
         this.executor = Executors.newFixedThreadPool(2);
         this.selector = selector;
-        this.clients = clients;
     }
 
-    public void submit(@NotNull SelectionKey key) {
+    public void submit(@NotNull SelectionKey key, byte[] data) {
         executor.execute(() -> {
             try {
-                @NotNull SocketChannel socket = (SocketChannel) key.channel();
+                @NotNull String text = new String(data).trim();
                 if (key.attachment() == null) {
-                    @NotNull ByteBuffer buffer = ByteBuffer.allocate(1024);
-                    if (socket.read(buffer) > 0) {
-                        buffer.flip();
-                        @NotNull String[] parts = new String(buffer.array()).trim().split(":");
-                        @NotNull Client client = new Client(new Account(new User(parts[0], parts[1])), socket);
-                        key.attach(client);
-                        clients.add(client);
-                        Server.log.info(parts[0] + " joined on chat");
-                    }
+                    @NotNull String parts[] = text.split(":");
+                    if (parts.length < 2) return;
+
+                    @NotNull SocketChannel socket = (SocketChannel) key.channel();
+                    @NotNull Client client = new Client(new Account(new User(parts[0], parts[1])), socket);
+                    key.attach(client);
+                    clients.add(client);
+                    Server.log.info(parts[0] + " joined on chat");
                 }
-            } catch (IOException e) {
-                throw new RuntimeException(e);
+            } catch (Exception e) {
+                Server.log.severe("Error processing worker task: " + e.getMessage());
             }
 
             if (key.isValid()) {
