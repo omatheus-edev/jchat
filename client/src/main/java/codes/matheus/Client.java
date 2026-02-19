@@ -18,6 +18,7 @@ public final class Client {
     public static final @NotNull Logger log = Logger.create(Client.class);
     private final @NotNull SocketChannel socket;
     private final @NotNull Selector selector;
+    private volatile boolean authenticated = false;
 
     public Client() {
         try {
@@ -37,7 +38,7 @@ public final class Client {
         @NotNull ByteBuffer buffer = ByteBuffer.wrap(data.getBytes(StandardCharsets.UTF_8));
 
         socket.write(buffer);
-        log.info("Connected to the server");
+        log.info("Data sent, waiting for server approval...");
         new Thread(() -> {
             try {
                 while (socket.isOpen() && selector.isOpen()) {
@@ -49,7 +50,44 @@ public final class Client {
                         @NotNull SelectionKey key = keyIterator.next();
                         keyIterator.remove();
 
+                        if (key.isReadable()) {
+                            @NotNull ByteBuffer response = ByteBuffer.allocate(1024);
+                            int read = socket.read(response);
+                            if (read > 0) {
+                                response.flip();
+                                @NotNull String message = new String(response.array(), 0, response.limit());
 
+                                if (message.contains("AUTH_SUCCESS")) {
+                                    log.info("Successfully authenticated");
+                                    authenticated = true;
+                                } else if (message.contains("AUTH_FAILED")) {
+                                    log.severe("Connection failed: Invalid credentials");
+                                    socket.close();
+                                } else {
+                                    System.out.println(message);
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }).start();
+
+        new Thread(() -> {
+            try {
+                while (socket.isOpen() && selector.isOpen()) {
+                    if (authenticated) {
+                        @NotNull String text = reader.readLine();
+
+                        if (!text.isBlank()) {
+                            socket.write(ByteBuffer.wrap(text.getBytes()));
+                            if (text.equalsIgnoreCase("exit")) {
+                                socket.close();
+                                break;
+                            }
+                        }
                     }
                 }
             } catch (IOException e) {
