@@ -66,7 +66,7 @@ public final class MessageResponse implements Message {
     @Override
     public @NotNull JsonObject toJson() {
         @NotNull JsonObject json = new JsonObject();
-        json.addProperty("status", status.toString());
+        json.addProperty("status", status.getCode());
         json.addProperty("content", content);
         json.addProperty("instant", format());
         return json;

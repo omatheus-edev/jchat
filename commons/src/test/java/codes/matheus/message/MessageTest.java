@@ -1,6 +1,5 @@
-package message;
+package codes.matheus.message;
 
-import codes.matheus.message.*;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 
@@ -20,7 +19,7 @@ final class MessageTest {
 
         @NotNull MessageResponse response = Message.create(Message.Type.RESPONSE, Message.Operation.AUTH, "201|Successfully authenticated", instant);
         assertEquals(MessageStatus.CREATED, response.getStatus());
-        assertEquals("{\"status\":\"CREATED\",\"content\":\"Successfully authenticated\",\"instant\":\"" + expectedTime + "\"}", response.toJson().toString());
+        assertEquals("{\"status\":201,\"content\":\"Successfully authenticated\",\"instant\":\"" + expectedTime + "\"}", response.toJson().toString());
 
 
         @NotNull MessageChat server = Message.create(Message.Type.CHAT, Message.Operation.BROADCAST, "SERVER:skar joined the chat", instant);
