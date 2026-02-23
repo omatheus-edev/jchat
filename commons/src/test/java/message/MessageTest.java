@@ -36,6 +36,11 @@ final class MessageTest {
         System.out.println(response.toJson());
         System.out.println(server.toJson());
         System.out.println(user.toJson());
+    }
 
+    @Test
+    void testException() {
+        assertThrows(IllegalArgumentException.class, () -> Message.create(Message.Type.REQUEST, Message.Operation.BROADCAST, "skar:hello guys"));
+        assertThrows(IllegalArgumentException.class, () -> Message.create(Message.Type.CHAT, Message.Operation.AUTH, "skar:password123"));
     }
 }

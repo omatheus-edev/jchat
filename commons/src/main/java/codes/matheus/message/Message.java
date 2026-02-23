@@ -40,7 +40,7 @@ public sealed interface Message permits MessageChat, MessageRequest, MessageResp
         REQUEST(Operation.AUTH) {
             @NotNull Message create(@NotNull Operation operation, @NotNull String content, @NotNull Instant instant) {
                 if (!support(operation)) {
-                    throw new RuntimeException("chat request should not receive this operation");
+                    throw new IllegalArgumentException("chat request should not receive this operation");
                 }
                 return new MessageRequest(operation, content, instant);
             }
@@ -48,7 +48,7 @@ public sealed interface Message permits MessageChat, MessageRequest, MessageResp
         RESPONSE(Operation.AUTH) {
             @NotNull Message create(@NotNull Operation operation, @NotNull String content, @NotNull Instant instant) {
                 if (!support(operation)) {
-                    throw new RuntimeException("chat response should not receive this operation");
+                    throw new IllegalArgumentException("chat response should not receive this operation");
                 }
                 return new MessageResponse(operation, content, instant);
             }
@@ -56,7 +56,7 @@ public sealed interface Message permits MessageChat, MessageRequest, MessageResp
         CHAT(Operation.BROADCAST, Operation.PRIVATE_MESSAGE) {
             @NotNull Message create(@NotNull Operation operation, @NotNull String content, @NotNull Instant instant) {
                 if (!support(operation)) {
-                    throw new RuntimeException("chat message should not receive this operation");
+                    throw new IllegalArgumentException("chat message should not receive this operation");
                 }
                 return new MessageChat(operation, content, instant);
             }
