@@ -16,7 +16,7 @@ public final class Protocol {
                 message.toJson();
     }
 
-    public @NotNull Message decode(@NotNull String message) {
+    public <T extends Message> @NotNull T decode(@NotNull String message) {
         @NotNull String[] parts = message.split("\r\n\r\n", 2);
         @NotNull String header = parts[0];
         @NotNull String body = parts[1];

@@ -2,12 +2,14 @@ package codes.matheus.server;
 
 import codes.matheus.entity.Account;
 import codes.matheus.entity.Client;
+import codes.matheus.message.Message;
+import codes.matheus.message.MessageChat;
+import codes.matheus.message.Protocol;
 import codes.matheus.user.Password;
 import codes.matheus.user.User;
 import codes.matheus.user.Username;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -20,11 +22,15 @@ import java.util.concurrent.Executors;
 public final class WorkerThread {
     private final @NotNull ExecutorService executor;
     private final @NotNull Selector selector;
+    private final @NotNull Broadcast broadcast;
+    private final @NotNull Protocol protocol;
     private final @NotNull Set<Client> clients = ConcurrentHashMap.newKeySet();
 
     public WorkerThread(@NotNull Selector selector) {
         this.executor = Executors.newFixedThreadPool(2);
         this.selector = selector;
+        this.broadcast = new Broadcast(clients);
+        this.protocol = new Protocol();
     }
 
     public void submit(@NotNull SelectionKey key, byte[] data) {
@@ -41,20 +47,29 @@ public final class WorkerThread {
                         key.attach(client);
                         client.getAccount().setClient(client);
                         clients.add(client);
-                        client.write("AUTH_SUCCESS");
+
+                        @NotNull Message response = Message.create(Message.Type.RESPONSE, Message.Operation.AUTH, "201|Authorization completed successfully");
+                        broadcast.toUser(parts[0], response);
+
+                        @NotNull Message message = Message.create(Message.Type.CHAT, Message.Operation.BROADCAST, "SERVER:" + parts[0] + " joined the chat");
+                        broadcast.toOthers(client, message);
                         Server.log.info(parts[0] + " joined");
-                        broadcast(client.getAccount().getUser().getUsername() + " joined the chat");
                     } else {
-                        socket.write(ByteBuffer.wrap("AUTH_FAILED".getBytes()));
+                        broadcast.toUser(socket, Message.create(Message.Type.RESPONSE, Message.Operation.AUTH, "401|Invalid data"));
                         socket.close();
                         key.cancel();
                     }
                 } else {
                     @NotNull Client sender = (Client) key.attachment();
-                    @NotNull String message = new String(data).trim();
-                    if (!message.isBlank()) {
-                        System.out.println(message);
-                        broadcast(message, sender);
+                    @NotNull MessageChat received = protocol.decode(text);
+                    switch (received.getOperation()) {
+                        case BROADCAST -> broadcast.toOthers(sender, received);
+                        case PRIVATE_MESSAGE -> {
+                            @NotNull String[] parts = received.getContent().split(":");
+                            if (parts.length == 2) {
+                                broadcast.toUser(parts[0], received);
+                            }
+                        }
                     }
                 }
             } catch (Exception e) {
@@ -66,19 +81,5 @@ public final class WorkerThread {
                 selector.wakeup();
             }
         });
-    }
-
-    private void broadcast(@NotNull String message, @NotNull Client sender) throws IOException {
-        for (@NotNull Client client : clients) {
-            if (sender != client) {
-                client.write(message);
-            }
-        }
-    }
-
-    public void broadcast(@NotNull String message) throws IOException {
-        for (@NotNull Client client : clients) {
-            client.write(message);
-        }
     }
 }

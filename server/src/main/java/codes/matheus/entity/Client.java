@@ -20,24 +20,6 @@ public final class Client {
         return account;
     }
 
-    public @NotNull SocketChannel getSocket() {
-        return socket;
-    }
-
-    public @NotNull String read() throws IOException {
-        @NotNull ByteBuffer buffer = ByteBuffer.allocate(4096);
-        buffer.clear();
-
-        int bytesRead = socket.read(buffer);
-        if (bytesRead == -1) {
-            buffer.clear();
-            socket.close();
-            return "";
-        }
-        buffer.flip();
-        return new String(buffer.array()).trim();
-    }
-
     public void write(@NotNull String message) throws IOException {
         @NotNull ByteBuffer buffer = ByteBuffer.wrap(message.getBytes());
         socket.write(buffer);

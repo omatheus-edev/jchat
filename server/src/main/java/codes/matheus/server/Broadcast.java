@@ -7,6 +7,8 @@ import codes.matheus.message.Protocol;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.SocketChannel;
 import java.util.Set;
 
 public final class Broadcast {
@@ -51,5 +53,14 @@ public final class Broadcast {
                         throw new BroadcastException("broadcast failed: " + e.getMessage());
                     }
                 });
+    }
+
+    public void toUser(@NotNull SocketChannel socket, @NotNull Message message) {
+        try {
+            @NotNull String encoded = protocol.encode(message);
+            socket.write(ByteBuffer.wrap(encoded.getBytes()));
+        } catch (IOException e) {
+            throw new BroadcastException("broadcast failed: " + e.getMessage());
+        }
     }
 }
