@@ -22,7 +22,7 @@ public final class Server {
     public Server() {
         try {
             this.server = ServerSocketChannel.open();
-            server.bind(new InetSocketAddress("localhost", 8080));
+            server.bind(new InetSocketAddress("0.0.0.0", 8080));
             server.configureBlocking(false);
             this.selector = Selector.open();
             server.register(selector, SelectionKey.OP_ACCEPT);
@@ -68,6 +68,7 @@ public final class Server {
                     }
                 }
             }
+            server.close();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

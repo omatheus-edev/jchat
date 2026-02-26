@@ -34,8 +34,11 @@ public final class Protocol {
                 yield Message.create(type, operation, status + "|" + content, instant);
             }
             case CHAT -> {
+                if (operation.equals(Message.Operation.PRIVATE_MESSAGE) && content.contains(":")) {
+                    content = content.substring(content.indexOf(":") + 1);
+                }
                 @NotNull String sender = json.get("sender").getAsString();
-                yield Message.create(type, operation, sender + ":" + content, instant);
+                yield Message.create(type, operation,sender + ":" + content, instant);
             }
         };
 
