@@ -27,7 +27,7 @@ public final class Client {
 
     public Client() {
         try {
-            this.socket = SocketChannel.open(new InetSocketAddress("localhost", 8080));
+            this.socket = SocketChannel.open(new InetSocketAddress("0.0.0.0", 8080));
             socket.configureBlocking(false);
             this.selector = Selector.open();
             socket.register(selector, SelectionKey.OP_READ);
@@ -39,8 +39,8 @@ public final class Client {
 
     public void connect() throws IOException {
         @NotNull BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
-        System.out.print("Enter your data: ");
-        @NotNull String data = reader.readLine();
+        @NotNull UI ui = new UI();
+        @NotNull String data = ui.getValidateInput(reader);
         @NotNull String username = data.split(":")[0];
         socket.write(ByteBuffer.wrap(data.getBytes()));
         log.info("Data sent, waiting for server approval...");
@@ -73,7 +73,11 @@ public final class Client {
                                         return;
                                     }
                                 } else if(message instanceof MessageChat chat) {
-                                    System.out.println(chat);
+                                    if (chat.getOperation().equals(Message.Operation.PRIVATE_MESSAGE)) {
+                                        System.out.println(chat.format() + " \033[1;91m[PRIVATE MESSAGE]\033[0m " + chat.getSender() + ": " + chat.getContent());
+                                    } else {
+                                        System.out.println(chat);
+                                    }
                                 }
                             }
                         }
