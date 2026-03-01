@@ -1,5 +1,6 @@
 package codes.matheus;
 
+import codes.matheus.message.Message;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.BufferedReader;
@@ -11,6 +12,11 @@ public final class UI {
     public static final @NotNull String GREEN   = "\033[1;92m";
     public static final @NotNull String CYAN    = "\033[1;96m";
     public static final @NotNull String WHITE   = "\033[1;97m";
+
+    public UI() {
+        welcome();
+    }
+
 
     public void welcome() {
         System.out.println(GREEN + "========================================" + RESET);
@@ -31,6 +37,13 @@ public final class UI {
 
             return input;
         }
+    }
+
+    public @NotNull Message.Operation getAuthOperation(@NotNull BufferedReader reader) throws IOException {
+        System.out.println(GREEN + "\n[1] Login | [2] Sign Up" + RESET);
+        System.out.print("Choose: ");
+        @NotNull String choice = reader.readLine();
+        return "2".equals(choice) ? Message.Operation.AUTH_SIGNUP : Message.Operation.AUTH_LOGIN;
     }
 
     private void requirements() {

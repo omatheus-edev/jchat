@@ -37,7 +37,7 @@ public sealed interface Message permits MessageChat, MessageRequest, MessageResp
     }
 
     enum Type {
-        REQUEST(Operation.AUTH) {
+        REQUEST(Operation.AUTH_LOGIN, Operation.AUTH_SIGNUP) {
             @NotNull Message create(@NotNull Operation operation, @NotNull String content, @NotNull Instant instant) {
                 if (!support(operation)) {
                     throw new IllegalArgumentException("chat request should not receive this operation");
@@ -45,7 +45,7 @@ public sealed interface Message permits MessageChat, MessageRequest, MessageResp
                 return new MessageRequest(operation, content, instant);
             }
         },
-        RESPONSE(Operation.AUTH) {
+        RESPONSE(Operation.AUTH_LOGIN, Operation.AUTH_SIGNUP) {
             @NotNull Message create(@NotNull Operation operation, @NotNull String content, @NotNull Instant instant) {
                 if (!support(operation)) {
                     throw new IllegalArgumentException("chat response should not receive this operation");
@@ -76,7 +76,8 @@ public sealed interface Message permits MessageChat, MessageRequest, MessageResp
     }
 
     enum Operation {
-        AUTH,
+        AUTH_LOGIN,
+        AUTH_SIGNUP,
         BROADCAST,
         PRIVATE_MESSAGE
     }

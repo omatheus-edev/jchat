@@ -30,7 +30,7 @@ public final class Password implements CharSequence {
         this.password = password;
     }
 
-    public @NotNull String getPassword() {
+    public @NotNull String getValue() {
         return password;
     }
 

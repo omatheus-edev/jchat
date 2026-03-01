@@ -13,11 +13,11 @@ final class MessageTest {
         @NotNull Instant instant = Instant.parse("2026-02-21T23:00:00Z");
         @NotNull String expectedTime = "21/02/2026 20:00:00";
 
-        @NotNull MessageRequest request = Message.create(Message.Type.REQUEST, Message.Operation.AUTH, "skar:password123", instant);
+        @NotNull MessageRequest request = Message.create(Message.Type.REQUEST, Message.Operation.AUTH_LOGIN, "skar:password123", instant);
         assertEquals("skar:password123", request.getContent());
         assertEquals("{\"content\":\"skar:password123\",\"instant\":\"" + expectedTime + "\"}", request.toJson().toString());
 
-        @NotNull MessageResponse response = Message.create(Message.Type.RESPONSE, Message.Operation.AUTH, "201|Successfully authenticated", instant);
+        @NotNull MessageResponse response = Message.create(Message.Type.RESPONSE, Message.Operation.AUTH_LOGIN, "201|Successfully authenticated", instant);
         assertEquals(MessageStatus.CREATED, response.getStatus());
         assertEquals("{\"status\":201,\"content\":\"Successfully authenticated\",\"instant\":\"" + expectedTime + "\"}", response.toJson().toString());
 
@@ -40,6 +40,6 @@ final class MessageTest {
     @Test
     void testException() {
         assertThrows(IllegalArgumentException.class, () -> Message.create(Message.Type.REQUEST, Message.Operation.BROADCAST, "skar:hello guys"));
-        assertThrows(IllegalArgumentException.class, () -> Message.create(Message.Type.CHAT, Message.Operation.AUTH, "skar:password123"));
+        assertThrows(IllegalArgumentException.class, () -> Message.create(Message.Type.CHAT, Message.Operation.AUTH_LOGIN, "skar:password123"));
     }
 }

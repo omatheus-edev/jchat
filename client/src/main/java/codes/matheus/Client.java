@@ -40,9 +40,12 @@ public final class Client {
     public void connect() throws IOException {
         @NotNull BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
         @NotNull UI ui = new UI();
+        @NotNull Message.Operation authOp = ui.getAuthOperation(reader);
         @NotNull String data = ui.getValidateInput(reader);
         @NotNull String username = data.split(":")[0];
-        socket.write(ByteBuffer.wrap(data.getBytes()));
+
+        @NotNull Message request = Message.create(Message.Type.REQUEST, authOp, data);
+        socket.write(ByteBuffer.wrap(protocol.encode(request).getBytes()));
         log.info("Data sent, waiting for server approval...");
 
         new Thread(() -> {
@@ -69,6 +72,10 @@ public final class Client {
                                         authenticated = true;
                                     } else if (response.getStatus().getCode() == 401) {
                                         log.severe("Connection failed: Invalid credentials");
+                                        socket.close();
+                                        return;
+                                    } else if (response.getStatus().getCode() == 404) {
+                                        log.severe("Login failed: User not found");
                                         socket.close();
                                         return;
                                     }

@@ -32,11 +32,13 @@ public final class Broadcast {
 
     public void toOthers(@NotNull Client client, @NotNull Message message) {
         @NotNull String encoded = protocol.encode(message);
-        clients.stream().filter(c -> !client.equals(c)).forEach(c -> {
-            try {
-                c.write(encoded);
-            } catch (IOException e) {
-                throw new BroadcastException("broadcast failed: " + e.getMessage());
+        clients.forEach(c -> {
+            if (c != client && c.getSocket().isOpen()) {
+                try {
+                    c.write(encoded);
+                } catch (IOException e) {
+                    throw new BroadcastException("broadcast failed: " + e.getMessage());
+                }
             }
         });
 
