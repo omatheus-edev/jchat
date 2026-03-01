@@ -60,7 +60,7 @@ public final class WorkerThread {
                     }
                 }
             } catch (Exception e) {
-                Server.log.severe("Error processing worker task: " + e.getMessage());
+                Server.log.warn("Error processing worker task: " + e.getMessage());
                 if (key.attachment() instanceof Client client) {
                     clients.remove(client);
                     Server.log.info("Client " + client.getAccount().getUser().getUsername().getName() + " disconnected due to error.");
@@ -126,5 +126,23 @@ public final class WorkerThread {
         @NotNull Message message = Message.create(Message.Type.CHAT, Message.Operation.BROADCAST, "SERVER:" + user.getUsername().getName() + " joined the chat");
         broadcast.toOthers(client, message);
         Server.log.info(user.getUsername().getName() + " joined");
+    }
+
+    public void disconnect(@NotNull SelectionKey key) {
+        if (key.attachment() instanceof Client client) {
+            clients.remove(client);
+            Server.log.info(client.getAccount().getUser().getUsername().getName() + " disconnected.");
+
+            @NotNull Message message = Message.create(Message.Type.CHAT, Message.Operation.BROADCAST,
+                    "SERVER:" + client.getAccount().getUser().getUsername().getName() + " left the chat");
+            broadcast.toOthers(client, message);
+        }
+
+        try {
+            key.channel().close();
+        } catch (IOException e) {
+            Server.log.severe("Error closing channel: " + e.getMessage());
+        }
+        key.cancel();
     }
 }

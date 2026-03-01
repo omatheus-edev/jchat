@@ -63,7 +63,7 @@ public final class Server {
                             buffer.get(data);
                             thread.submit(key, data);
                         } else if (read == -1) {
-                            key.channel().close();
+                            thread.disconnect(key);
                         }
                     }
                 }

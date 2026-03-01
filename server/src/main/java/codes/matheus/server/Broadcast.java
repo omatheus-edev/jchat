@@ -19,17 +19,6 @@ public final class Broadcast {
         this.clients = clients;
     }
 
-    public void toAll(@NotNull Message message) {
-        @NotNull String encoded = protocol.encode(message);
-        clients.forEach(client -> {
-            try {
-                client.write(encoded);
-            } catch (IOException e) {
-                throw new BroadcastException("broadcast failed: " + e.getMessage());
-            }
-        });
-    }
-
     public void toOthers(@NotNull Client client, @NotNull Message message) {
         @NotNull String encoded = protocol.encode(message);
         clients.forEach(c -> {
