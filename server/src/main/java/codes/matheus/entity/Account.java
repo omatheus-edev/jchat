@@ -1,6 +1,5 @@
 package codes.matheus.entity;
 
-import codes.matheus.user.User;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

@@ -1,4 +1,4 @@
-package codes.matheus.user;
+package codes.matheus.entity;
 
 import org.junit.jupiter.api.Test;
 

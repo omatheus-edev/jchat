@@ -6,7 +6,7 @@ import codes.matheus.message.Message;
 import codes.matheus.message.MessageChat;
 import codes.matheus.message.Protocol;
 import codes.matheus.repository.UserRepository;
-import codes.matheus.user.User;
+import codes.matheus.entity.User;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

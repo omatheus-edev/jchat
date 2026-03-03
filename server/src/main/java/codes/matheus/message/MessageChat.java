@@ -1,7 +1,7 @@
 package codes.matheus.message;
 
 import codes.matheus.exception.ProtocolException;
-import codes.matheus.user.Username;
+import codes.matheus.entity.Username;
 import com.google.gson.JsonObject;
 import org.jetbrains.annotations.NotNull;
 
