@@ -8,16 +8,20 @@ import codes.matheus.message.Protocol;
 import codes.matheus.repository.UserRepository;
 import codes.matheus.user.User;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
+import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 public final class WorkerThread {
     private final @NotNull ExecutorService executor;
@@ -25,7 +29,9 @@ public final class WorkerThread {
     private final @NotNull Broadcast broadcast;
     private final @NotNull Protocol protocol;
     private final @NotNull UserRepository repository;
+    private final @NotNull WebSocketHandshake webSocketHs;
     private final @NotNull Set<Client> clients = ConcurrentHashMap.newKeySet();
+    private final @NotNull Set<SelectionKey> handshakeClients = ConcurrentHashMap.newKeySet();
 
     public WorkerThread(@NotNull Selector selector) {
         this.executor = Executors.newFixedThreadPool(2);
@@ -33,12 +39,35 @@ public final class WorkerThread {
         this.broadcast = new Broadcast(clients);
         this.repository = new UserRepository();
         this.protocol = new Protocol();
+        this.webSocketHs = new WebSocketHandshake();
     }
 
     public void submit(@NotNull SelectionKey key, byte[] data) {
         executor.execute(() -> {
             try {
-                @NotNull String text = new String(data).trim();
+                @Nullable String text = new String(data).trim();
+
+                if (webSocketHs.isHandshake(text)) {
+                    @NotNull String response = webSocketHs.response(text);
+                    ((SocketChannel) key.channel()).write(ByteBuffer.wrap(response.getBytes(StandardCharsets.UTF_8)));
+                    handshakeClients.add(key);
+                    reactivate(key);
+                    return;
+                }
+
+                if (handshakeClients.contains(key)) {
+                    @NotNull ByteBuffer buffer = ByteBuffer.wrap(data);
+                    text = WebSocketFrame.decode(buffer);
+                    if (text == null) {
+                        disconnect(key);
+                        return;
+                    }
+                    if (text.isEmpty()) {
+                        reactivate(key);
+                        return;
+                    }
+                }
+
                 if (key.attachment() == null) {
                     @NotNull Message message = protocol.decode(text);
 
@@ -73,11 +102,15 @@ public final class WorkerThread {
                 key.cancel();
             }
 
-            if (key.isValid()) {
-                key.interestOps(SelectionKey.OP_READ);
-                selector.wakeup();
-            }
+            reactivate(key);
         });
+    }
+
+    private void reactivate(@NotNull SelectionKey key) {
+        if (key.isValid()) {
+            key.interestOps(SelectionKey.OP_READ);
+            selector.wakeup();
+        }
     }
 
     private void signup(@NotNull SelectionKey key, @NotNull Message message) {
@@ -87,7 +120,7 @@ public final class WorkerThread {
         @NotNull SocketChannel socket = (SocketChannel) key.channel();
         @NotNull User user = new User(parts[0], parts[1]);
         if (repository.exists(user)) {
-            broadcast.toUser(socket, Message.create(Message.Type.RESPONSE, Message.Operation.AUTH_SIGNUP, "401|User already exists"));
+            broadcast.toUser(socket, Message.create(Message.Type.RESPONSE, Message.Operation.AUTH_SIGNUP, "401|User already exists"), handshakeClients.contains(key));
             return;
         }
 
@@ -102,27 +135,38 @@ public final class WorkerThread {
         @NotNull SocketChannel socket = (SocketChannel) key.channel();
         @NotNull Optional<User> optionalUser = repository.get(parts[0]);
         if (optionalUser.isEmpty()) {
-            broadcast.toUser(socket, Message.create(Message.Type.RESPONSE, Message.Operation.AUTH_LOGIN, "404|User not found"));
+            broadcast.toUser(socket, Message.create(Message.Type.RESPONSE, Message.Operation.AUTH_LOGIN, "404|User not found"), handshakeClients.contains(key));
             return;
         }
 
         @NotNull User user = optionalUser.get();
         if (!user.getPassword().getValue().equals(parts[1])) {
             broadcast.toUser(socket,
-                    Message.create(Message.Type.RESPONSE, Message.Operation.AUTH_LOGIN, "401|Invalid password"));
+                    Message.create(Message.Type.RESPONSE, Message.Operation.AUTH_LOGIN, "401|Invalid password"), handshakeClients.contains(key));
             return;
         }
         authenticate(key, socket, user);
     }
 
     private void authenticate(@NotNull SelectionKey key, @NotNull SocketChannel socket, @NotNull User user) {
-        @NotNull Client client = new Client(new Account(user), socket);
+        @NotNull Client client = new Client(new Account(user), socket, handshakeClients.contains(key));
         key.attach(client);
         client.getAccount().setClient(client);
         clients.add(client);
 
         @NotNull Message response = Message.create(Message.Type.RESPONSE, Message.Operation.AUTH_LOGIN, "201|Authorization completed successfully");
         broadcast.toUser(user.getUsername().getName(), response);
+
+        @NotNull String onlineUsers = clients.stream()
+                .filter(c -> c != client)
+                .map(c -> c.getAccount().getUser().getUsername().getName())
+                .collect(Collectors.joining(","));
+
+        if (!onlineUsers.isEmpty()) {
+            @NotNull Message listUsers = Message.create(Message.Type.CHAT, Message.Operation.BROADCAST, "SERVER:ONLINE_LIST:" + onlineUsers);
+            broadcast.toUser(user.getUsername().getName(), listUsers);
+        }
+
         @NotNull Message message = Message.create(Message.Type.CHAT, Message.Operation.BROADCAST, "SERVER:" + user.getUsername().getName() + " joined the chat");
         broadcast.toOthers(client, message);
         Server.log.info(user.getUsername().getName() + " joined");

@@ -55,7 +55,7 @@ public final class Server {
                     if (key.isReadable()) {
                         key.interestOps(key.interestOps() & ~SelectionKey.OP_READ);
 
-                        @NotNull ByteBuffer buffer = ByteBuffer.allocate(1024);
+                        @NotNull ByteBuffer buffer = ByteBuffer.allocate(4096);
                         int read = ((SocketChannel) key.channel()).read(buffer);
                         if (read > 0) {
                             buffer.flip();

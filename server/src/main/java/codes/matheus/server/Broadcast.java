@@ -46,10 +46,11 @@ public final class Broadcast {
                 });
     }
 
-    public void toUser(@NotNull SocketChannel socket, @NotNull Message message) {
+    public void toUser(@NotNull SocketChannel socket, @NotNull Message message, boolean isWebSocket) {
         try {
             @NotNull String encoded = protocol.encode(message);
-            socket.write(ByteBuffer.wrap(encoded.getBytes()));
+            @NotNull ByteBuffer buffer = isWebSocket ? WebSocketFrame.encode(encoded) : ByteBuffer.wrap(encoded.getBytes());
+            socket.write(buffer);
         } catch (IOException e) {
             throw new BroadcastException("broadcast failed: " + e.getMessage());
         }
