@@ -12,12 +12,13 @@ RUN mvn install:install-file \
         -Dversion=1.0 \
         -Dpackaging=jar
 
-RUN mvn clean package
+RUN mvn clean package -pl server -am
 
 FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
 
 COPY --from=build /app/server/target/server.jar server.jar
+COPY --from=build /app/frontend/ frontend/
 
 EXPOSE 8080
 
