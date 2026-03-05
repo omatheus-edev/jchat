@@ -59,7 +59,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>codes.matheus.ServerMain</mainClass>
+                            <mainClass>codes.matheus.Main</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
