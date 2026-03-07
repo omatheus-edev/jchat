@@ -1,6 +1,7 @@
-package codes.matheus.server;
+package codes.matheus.web.websocket;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -13,7 +14,13 @@ public final class WebSocketHandshake {
     private final @NotNull Pattern KEY_PATTERN = Pattern.compile("Sec-WebSocket-Key: (.+)\\r\\n");
 
     public boolean isHandshake(@NotNull String data) {
-        return data.startsWith("GET ");
+        return data.startsWith("GET ") && data.contains("Upgrade: websocket");
+    }
+
+    public @Nullable String extractToken(@NotNull String request) {
+        Pattern pattern = Pattern.compile("GET /.*[?&]token=([^& \\r\\n]+)");
+        Matcher matcher = pattern.matcher(request);
+        return matcher.find() ? matcher.group(1).trim() : null;
     }
 
     public @NotNull String response(@NotNull String request) {

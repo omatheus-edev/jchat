@@ -1,4 +1,4 @@
-package codes.matheus.server;
+package codes.matheus.web.websocket;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
