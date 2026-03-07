@@ -18,7 +18,7 @@ public final class Broadcast {
     public void toAll(@NotNull Message message) {
         sessions.forEach(session -> {
             try {
-                session.send(message.toString());
+                session.send(message.serialize());
             } catch (IOException e) {
                 throw new BroadcastException("broadcast failed: " + e.getMessage());
             }
@@ -28,7 +28,7 @@ public final class Broadcast {
     public void toOthers(@NotNull WebSocketSession sender, @NotNull Message message) {
         sessions.stream().filter(session -> !sender.equals(session)).forEach(session -> {
             try {
-                session.send(message.toString());
+                session.send(message.serialize());
             } catch (IOException e) {
                 throw new BroadcastException("broadcast failed: " + e.getMessage());
             }
@@ -40,7 +40,7 @@ public final class Broadcast {
                 .findFirst()
                 .ifPresent(session -> {
                     try {
-                        session.send(message.toString());
+                        session.send(message.serialize());
                     } catch (IOException e) {
                         throw new BroadcastException("broadcast failed: " + e.getMessage());
                     }
