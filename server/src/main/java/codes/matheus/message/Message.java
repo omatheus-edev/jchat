@@ -19,8 +19,7 @@ public final class Message {
             @NotNull JsonObject obj = JsonParser.parseString(json).getAsJsonObject();
             @NotNull Type type = Type.valueOf(obj.get("type").getAsString());
             @NotNull String content = obj.get("content").getAsString();
-            @NotNull Instant instant = Instant.parse(obj.get("instant").getAsString());
-            return new Message(type, content, sender, instant);
+            return new Message(type, content, sender);
         } catch (Exception e) {
             return null;
         }

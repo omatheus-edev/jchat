@@ -49,7 +49,7 @@ public final class WebSocketServer {
             server.configureBlocking(false);
             server.register(selector, SelectionKey.OP_ACCEPT);
 
-            log.info("Web Socket Server running on address: " + server.getLocalAddress());
+            log.info("Web Socket Server running on ws://localhost:" + port + "/");
             while (server.isOpen() && selector.isOpen()) {
                 @NotNull Iterator<SelectionKey> keyIterator;
                 selector.select();
