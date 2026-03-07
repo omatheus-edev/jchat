@@ -17,7 +17,7 @@ public final class AuthRoute {
     private final @NotNull UserRepository repository;
 
     public AuthRoute() {
-        this.repository = new UserRepository();
+        this.repository = UserRepository.getInstance();
     }
 
     public void signup(@NotNull HttpExchange exchange) throws IOException {

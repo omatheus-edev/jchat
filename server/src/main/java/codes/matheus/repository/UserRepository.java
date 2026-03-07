@@ -7,6 +7,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
 import java.util.Optional;
@@ -14,13 +15,26 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public final class UserRepository {
+    public static @NotNull UserRepository getInstance() {
+        if (instance == null) {
+            synchronized (UserRepository.class) {
+                if (instance == null) {
+                    instance = new UserRepository();
+                }
+            }
+        }
+        return instance;
+    }
+
+    private static @Nullable UserRepository instance;
+
     private final @NotNull String path = "users.json";
     private final @NotNull Gson gson = new GsonBuilder()
             .setPrettyPrinting()
             .create();
     private final @NotNull Set<User> users = ConcurrentHashMap.newKeySet();
 
-    public UserRepository() {
+    private UserRepository() {
         load();
     }
 
@@ -64,6 +78,13 @@ public final class UserRepository {
 
     public @NotNull Optional<User> get(@NotNull String username) {
         return users.stream().filter(u -> u.getUsername().getName().equals(username)).findFirst();
+    }
+
+    public @Nullable User getByToken(@NotNull String token) {
+        return users.stream()
+                .filter(u -> token.equals(u.getToken()))
+                .findFirst()
+                .orElse(null);
     }
 
     public boolean exists(@NotNull User user) {
