@@ -1,6 +1,5 @@
 package codes.matheus.message;
 
-import codes.matheus.entity.User;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.internal.bind.JsonTreeWriter;
@@ -15,12 +14,13 @@ import java.time.format.DateTimeFormatter;
 import java.util.Objects;
 
 public final class Message {
-    public static @Nullable Message deserialize(@NotNull String json, @NotNull User sender) {
+    public static @Nullable Message deserialize(@NotNull String json, @NotNull String sender) {
         try {
             @NotNull JsonObject obj = JsonParser.parseString(json).getAsJsonObject();
             @NotNull Type type = Type.valueOf(obj.get("type").getAsString());
             @NotNull String content = obj.get("content").getAsString();
-            return new Message(type, content, sender);
+            @NotNull Instant instant = Instant.parse(obj.get("instant").getAsString());
+            return new Message(type, content, sender, instant);
         } catch (Exception e) {
             return null;
         }
@@ -28,14 +28,18 @@ public final class Message {
 
     private final @NotNull Type type;
     private final @NotNull String content;
-    private final @NotNull User sender;
+    private final @NotNull String sender;
     private final @NotNull Instant instant;
 
-    public Message(@NotNull Type type, @NotNull String content, @NotNull User sender) {
+    public Message(@NotNull Type type, @NotNull String content, @NotNull String sender, @NotNull Instant instant) {
         this.type = type;
         this.content = content;
         this.sender = sender;
-        this.instant = Instant.now();
+        this.instant = instant;
+    }
+
+    public Message(@NotNull Type type, @NotNull String content, @NotNull String sender) {
+        this(type, content, sender, Instant.now());
     }
 
     public @NotNull Type getType() {
@@ -46,7 +50,7 @@ public final class Message {
         return content;
     }
 
-    public @NotNull User getSender() {
+    public @NotNull String getSender() {
         return sender;
     }
 
@@ -58,7 +62,7 @@ public final class Message {
         try (JsonTreeWriter writer = new JsonTreeWriter()) {
             writer.beginObject();
             writer.name("type").value(type.name());
-            writer.name("sender").value(sender.getUsername().getName());
+            writer.name("sender").value(sender);
             writer.name("content").value(content);
             writer.name("instant").value(format());
             writer.endObject();
@@ -76,7 +80,7 @@ public final class Message {
 
     @Override
     public String toString() {
-        return format() + " " + sender.getUsername().getName() + ": " + content;
+        return format() + " " + sender + ": " + content;
     }
 
     @Override
