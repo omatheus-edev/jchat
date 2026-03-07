@@ -1,7 +1,7 @@
 package codes.matheus.repository;
 
-import codes.matheus.server.Server;
 import codes.matheus.entity.User;
+import codes.matheus.web.http.Server;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;

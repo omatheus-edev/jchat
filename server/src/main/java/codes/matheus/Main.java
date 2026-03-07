@@ -1,6 +1,6 @@
 package codes.matheus;
 
-import codes.matheus.http.Server;
+import codes.matheus.web.http.Server;
 import org.jetbrains.annotations.NotNull;
 
 public class Main {

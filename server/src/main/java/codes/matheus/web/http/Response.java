@@ -1,5 +1,6 @@
 package codes.matheus.web.http;
 
+import codes.matheus.entity.User;
 import codes.matheus.util.Json;
 import com.sun.net.httpserver.HttpExchange;
 import org.jetbrains.annotations.NotNull;
@@ -66,6 +67,10 @@ public final class Response {
         public Builder body(@NotNull String body) {
             this.body = body.getBytes(StandardCharsets.UTF_8);
             return this;
+        }
+
+        public Builder json(@NotNull User user) {
+            return body(Json.serialize(user));
         }
 
         public Builder error(@NotNull String message) {
