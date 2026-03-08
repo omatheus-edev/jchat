@@ -6,7 +6,6 @@
 <title>jchat</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;700&family=Bebas+Neue&display=swap" rel="stylesheet">
 <style>
-  /* ── THEMES ── */
   [data-theme="light"] {
     --bg:       #f0ebe3;
     --surface:  #e8e1d7;
@@ -21,6 +20,8 @@
     --header-bg:#1a1612;
     --header-fg:#f0ebe3;
     --status-bg:#1a1612;
+    --error-bg: #fdf0ee;
+    --shake-color: #c0392b;
   }
 
   [data-theme="dark"] {
@@ -37,6 +38,8 @@
     --header-bg:#0a0908;
     --header-fg:#e8e1d7;
     --status-bg:#0a0908;
+    --error-bg: #1e0f0e;
+    --shake-color: #e05545;
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -61,6 +64,53 @@
     z-index: 9999;
   }
 
+  /* ── ANIMATIONS ── */
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes msgIn {
+    from { opacity: 0; transform: translateX(-6px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    15%     { transform: translateX(-6px); }
+    30%     { transform: translateX(6px); }
+    45%     { transform: translateX(-4px); }
+    60%     { transform: translateX(4px); }
+    75%     { transform: translateX(-2px); }
+    90%     { transform: translateX(2px); }
+  }
+
+  @keyframes ripple {
+    0%   { transform: scale(0); opacity: 0.4; }
+    100% { transform: scale(2.5); opacity: 0; }
+  }
+
+  @keyframes pulse {
+    0%,100% { box-shadow: 0 0 0 0 rgba(192,57,43,0.4); }
+    50%     { box-shadow: 0 0 0 6px rgba(192,57,43,0); }
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes errorFade {
+    0%   { opacity: 0; transform: translateY(-4px); }
+    10%  { opacity: 1; transform: translateY(0); }
+    80%  { opacity: 1; }
+    100% { opacity: 0; }
+  }
+
   /* ── AUTH ── */
   #auth-screen {
     position: fixed;
@@ -70,18 +120,25 @@
     justify-content: center;
     background: var(--bg);
     z-index: 100;
-    transition: background 0.2s;
+    animation: fadeIn 0.4s ease;
   }
 
   .auth-wrap {
     display: flex;
     width: 760px;
-    height: 460px;
+    height: 480px;
     border: 2px solid var(--ink);
     background: var(--surface);
     box-shadow: 6px 6px 0 var(--ink);
     overflow: hidden;
-    transition: all 0.2s;
+    position: relative;
+    transition: box-shadow 0.2s;
+  }
+
+  .auth-wrap.shake {
+    animation: shake 0.5s ease;
+    border-color: var(--accent);
+    box-shadow: 6px 6px 0 var(--accent);
   }
 
   .auth-left {
@@ -103,20 +160,20 @@
   }
 
   .auth-logo em { color: var(--accent); font-style: normal; }
-
   .auth-desc { font-size: 0.62rem; line-height: 1.7; color: var(--ink-dim); letter-spacing: 1px; }
-  .auth-version { font-size: 0.58rem; color: var(--ink-dim); letter-spacing: 2px; text-transform: uppercase; }
+  .auth-version { font-size: 0.58rem; color: #444; letter-spacing: 2px; text-transform: uppercase; }
 
   .auth-right {
     flex: 1;
     padding: 36px 40px;
     display: flex;
     flex-direction: column;
+    position: relative;
   }
 
   .auth-tabs {
     display: flex;
-    margin-bottom: 28px;
+    margin-bottom: 24px;
     border-bottom: 2px solid var(--border);
   }
 
@@ -142,17 +199,18 @@
     bottom: -2px; left: 0; right: 0;
     height: 2px;
     background: var(--accent);
+    animation: slideIn 0.2s ease;
   }
 
   .auth-title {
     font-family: 'Bebas Neue', sans-serif;
     font-size: 2rem;
     letter-spacing: 1px;
-    margin-bottom: 20px;
+    margin-bottom: 16px;
     color: var(--ink);
   }
 
-  .field { margin-bottom: 14px; }
+  .field { margin-bottom: 12px; }
 
   .field label {
     display: block;
@@ -173,13 +231,77 @@
     font-size: 0.82rem;
     padding: 9px 12px;
     outline: none;
-    transition: border-color 0.15s, background 0.2s, color 0.2s;
+    transition: border-color 0.15s, box-shadow 0.15s;
   }
 
-  .field input:focus { border-color: var(--ink); }
+  .field input:focus {
+    border-color: var(--ink);
+    box-shadow: 3px 3px 0 var(--border);
+  }
 
+  .field input.error {
+    border-color: var(--accent);
+    box-shadow: 3px 3px 0 rgba(192,57,43,0.2);
+  }
+
+  .field-password { position: relative; }
+
+  .toggle-pass {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--ink-dim);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    padding: 2px 4px;
+    transition: color 0.15s;
+  }
+
+  .toggle-pass:hover { color: var(--ink); }
+
+  .field input[type="password"],
+  .field input[type="text"] { padding-right: 52px; }
+
+  /* Rules */
+  .rules {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 12px;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    animation: slideIn 0.2s ease;
+  }
+
+  .rule-group { flex: 1; }
+
+  .rule-title {
+    font-size: 0.56rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: var(--ink-dim);
+    margin-bottom: 3px;
+  }
+
+  .rule-item {
+    font-size: 0.58rem;
+    color: var(--ink-dim);
+    line-height: 1.6;
+  }
+
+  .rule-item::before { content: '— '; color: var(--border); }
+  .rule-chars { color: var(--accent); font-weight: 700; }
+
+  /* Auth button */
   .btn-auth {
-    margin-top: 6px;
+    margin-top: 4px;
     padding: 11px;
     background: var(--accent);
     color: #fff;
@@ -191,21 +313,88 @@
     text-transform: uppercase;
     cursor: pointer;
     width: 100%;
+    position: relative;
+    overflow: hidden;
     transition: all 0.15s;
   }
 
-  .btn-auth:hover {
+  .btn-auth:hover:not(:disabled) {
     background: var(--ink);
     border-color: var(--ink);
     transform: translate(-2px,-2px);
     box-shadow: 4px 4px 0 var(--accent);
   }
 
-  .auth-error { font-size: 0.62rem; color: var(--accent); margin-top: 8px; min-height: 14px; }
+  .btn-auth:active:not(:disabled) {
+    transform: translate(1px,1px);
+    box-shadow: 1px 1px 0 var(--accent);
+  }
+
+  .btn-auth:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+
+  /* ripple */
+  .btn-auth .ripple {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.3);
+    width: 60px; height: 60px;
+    margin-top: -30px; margin-left: -30px;
+    animation: ripple 0.5s ease-out forwards;
+    pointer-events: none;
+  }
+
+  /* spinner inside button */
+  .btn-auth .spinner {
+    display: inline-block;
+    width: 12px; height: 12px;
+    border: 2px solid rgba(255,255,255,0.4);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    vertical-align: middle;
+    margin-right: 6px;
+  }
+
+  /* Auth error */
+  .auth-error {
+    font-size: 0.62rem;
+    color: var(--accent);
+    margin-top: 6px;
+    min-height: 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
+  }
+
+  .auth-error.visible {
+    animation: slideIn 0.2s ease;
+  }
+
+  /* Theme btn auth */
+  .theme-btn-auth {
+    position: absolute;
+    top: 12px; right: 12px;
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--ink-dim);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 2px;
+    padding: 4px 10px;
+    cursor: pointer;
+    transition: all 0.15s;
+    z-index: 1;
+  }
+
+  .theme-btn-auth:hover { border-color: var(--ink); color: var(--ink); }
 
   /* ── APP ── */
   #app { display: none; height: 100vh; flex-direction: column; }
-  #app.visible { display: flex; }
+  #app.visible { display: flex; animation: fadeIn 0.3s ease; }
 
   .header {
     height: 46px;
@@ -243,21 +432,20 @@
     border-radius: 50%;
     background: var(--online);
     box-shadow: 0 0 5px var(--online);
+    animation: pulse 2s infinite;
   }
 
-  /* Theme toggle */
   .theme-btn {
     background: none;
     border: 1px solid #333;
     color: #666;
-    font-size: 0.75rem;
-    width: 28px; height: 28px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.58rem;
+    letter-spacing: 1px;
+    padding: 4px 8px;
     cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    white-space: nowrap;
     transition: all 0.15s;
-    border-radius: 2px;
   }
 
   .theme-btn:hover { border-color: var(--accent); color: var(--accent); }
@@ -287,7 +475,7 @@
     display: flex;
     flex-direction: column;
     flex-shrink: 0;
-    transition: background 0.2s, border-color 0.2s;
+    transition: background 0.2s;
   }
 
   .sidebar-section { border-bottom: 2px solid var(--border); }
@@ -311,8 +499,7 @@
     font-size: 0.58rem;
     padding: 1px 7px;
     font-weight: 400;
-    letter-spacing: 0;
-    transition: background 0.2s, color 0.2s;
+    transition: all 0.2s;
   }
 
   .sidebar-list { padding: 3px 0 8px; overflow-y: auto; max-height: 280px; }
@@ -328,7 +515,8 @@
     color: var(--ink-dim);
     cursor: pointer;
     border-left: 3px solid transparent;
-    transition: all 0.1s;
+    transition: all 0.12s;
+    position: relative;
   }
 
   .sidebar-item:hover { background: var(--border); color: var(--ink); }
@@ -339,10 +527,27 @@
     border-left-color: var(--accent);
   }
 
+  .sidebar-item.new-msg::after {
+    content: '';
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: pulse 1.5s infinite;
+  }
+
   .user-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--online); flex-shrink: 0; }
   .sidebar-item.active .user-dot { background: var(--bg); opacity: 0.5; }
   .ch-hash { color: var(--border); }
   .sidebar-item.active .ch-hash { color: var(--accent); }
+
+  /* user join animation */
+  .sidebar-item.just-joined {
+    animation: slideIn 0.3s ease;
+  }
 
   /* Chat */
   .chat { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
@@ -367,12 +572,14 @@
     padding: 2px 7px;
     border: 2px solid var(--border);
     color: var(--ink-dim);
+    transition: all 0.15s;
   }
 
   .chat-type.pm { border-color: var(--accent2); color: var(--accent2); }
   .chat-name { font-size: 0.8rem; font-weight: 500; }
   .chat-meta { margin-left: auto; font-size: 0.6rem; color: var(--ink-dim); letter-spacing: 1px; }
 
+  /* Messages */
   .messages {
     flex: 1;
     overflow-y: auto;
@@ -405,13 +612,8 @@
     flex-direction: column;
     padding: 5px 10px;
     border-left: 3px solid transparent;
-    animation: msgIn 0.15s ease;
+    animation: msgIn 0.18s ease;
     transition: background 0.1s;
-  }
-
-  @keyframes msgIn {
-    from { opacity: 0; transform: translateY(3px); }
-    to   { opacity: 1; transform: translateY(0); }
   }
 
   .msg:hover { background: var(--surface); }
@@ -423,7 +625,7 @@
 
   .msg-meta { display: flex; align-items: baseline; gap: 8px; margin-bottom: 2px; }
 
-  .msg-author { font-size: 0.68rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--accent); }
+  .msg-author { font-size: 0.68rem; font-weight: 700; letter-spacing: 1px; color: var(--accent); }
   .msg.self .msg-author { color: var(--accent2); }
   .msg.server .msg-author { color: var(--ink-dim); }
 
@@ -454,10 +656,16 @@
     display: flex;
     border: 2px solid var(--ink);
     background: var(--bg);
-    transition: box-shadow 0.15s, background 0.2s;
+    transition: box-shadow 0.15s;
   }
 
   .input-row:focus-within { box-shadow: 3px 3px 0 var(--ink); }
+
+  .input-row.sending {
+    box-shadow: 3px 3px 0 var(--accent2);
+    border-color: var(--accent2);
+    transition: all 0.1s;
+  }
 
   .input-prefix {
     padding: 0 12px;
@@ -471,6 +679,7 @@
     user-select: none;
     min-width: 40px;
     justify-content: center;
+    transition: color 0.15s;
   }
 
   #msg-input {
@@ -499,9 +708,22 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    position: relative;
+    overflow: hidden;
   }
 
   .send-btn:hover { background: var(--accent); color: #fff; border-left-color: var(--accent); }
+  .send-btn:active { transform: scale(0.92); }
+
+  .send-btn .ripple {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.4);
+    width: 40px; height: 40px;
+    margin-top: -20px; margin-left: -20px;
+    animation: ripple 0.4s ease-out forwards;
+    pointer-events: none;
+  }
 
   .input-hint { font-size: 0.56rem; color: var(--ink-dim); margin-top: 5px; letter-spacing: 1px; }
   .input-hint span { color: var(--ink); font-weight: 700; }
@@ -519,26 +741,54 @@
     color: #444;
     letter-spacing: 1px;
     flex-shrink: 0;
-    transition: background 0.2s;
   }
 
   .status-ind { display: flex; align-items: center; gap: 5px; color: var(--online); }
   .status-ind.off { color: var(--accent); }
   .status-dot { width: 4px; height: 4px; border-radius: 50%; background: currentColor; }
   .statusbar-r { margin-left: auto; color: #333; }
+
+  /* Toast notification */
+  .toast {
+    position: fixed;
+    bottom: 36px;
+    left: 50%;
+    transform: translateX(-50%) translateY(10px);
+    background: var(--ink);
+    color: var(--bg);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 1px;
+    padding: 8px 16px;
+    border: 2px solid var(--border);
+    opacity: 0;
+    transition: all 0.25s;
+    pointer-events: none;
+    z-index: 1000;
+    white-space: nowrap;
+  }
+
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
 </style>
 </head>
 <body>
 
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
 <!-- AUTH -->
 <div id="auth-screen">
-  <div class="auth-wrap">
+  <div class="auth-wrap" id="auth-wrap">
     <div class="auth-left">
       <div class="auth-logo">j<em>ch</em>at</div>
       <div class="auth-desc">realtime messaging<br>over raw tcp sockets<br>built with java nio</div>
-      <div class="auth-version">v1.0 · localhost:8080</div>
+      <div class="auth-version">v1.0</div>
     </div>
     <div class="auth-right">
+      <button class="theme-btn-auth" id="theme-btn-auth" onclick="toggleTheme()">☀ LIGHT</button>
       <div class="auth-tabs">
         <button class="auth-tab active" onclick="switchTab('login')">Login</button>
         <button class="auth-tab" onclick="switchTab('signup')">Signup</button>
@@ -546,11 +796,28 @@
       <div class="auth-title" id="auth-title">Entrar</div>
       <div class="field">
         <label>Username</label>
-        <input type="text" id="auth-user" placeholder="seu_usuario" autocomplete="off" />
+        <input type="text" id="auth-user" placeholder="seu_usuario" autocomplete="off"
+          oninput="clearFieldError(this)" onkeydown="if(event.key==='Enter') handleAuth()" />
       </div>
-      <div class="field">
+      <div class="field field-password">
         <label>Password</label>
-        <input type="password" id="auth-pass" placeholder="••••••••" />
+        <input type="password" id="auth-pass" placeholder="••••••••"
+          oninput="clearFieldError(this)" onkeydown="if(event.key==='Enter') handleAuth()" />
+        <button class="toggle-pass" type="button" onclick="togglePass()" id="toggle-pass-btn">SHOW</button>
+      </div>
+      <div class="rules">
+        <div class="rule-group">
+          <div class="rule-title">Username</div>
+          <div class="rule-item">3–14 caracteres</div>
+          <div class="rule-item">letras, números, <span class="rule-chars">_ . # @ ! -</span></div>
+          <div class="rule-item">não pode ser só números</div>
+        </div>
+        <div class="rule-group">
+          <div class="rule-title">Password</div>
+          <div class="rule-item">5–14 caracteres</div>
+          <div class="rule-item">letras, números, <span class="rule-chars"># @ & ! _ -</span></div>
+          <div class="rule-item">pelo menos 1 letra e 1 número</div>
+        </div>
       </div>
       <button class="btn-auth" id="auth-btn" onclick="handleAuth()">Entrar →</button>
       <div class="auth-error" id="auth-error"></div>
@@ -565,7 +832,7 @@
     <div class="header-user">
       <div class="online-dot"></div>
       <strong id="header-username"></strong>
-      <button class="theme-btn" id="theme-btn" onclick="toggleTheme()" title="Alternar tema">◐</button>
+      <button class="theme-btn" id="theme-btn" onclick="toggleTheme()">☀ LIGHT</button>
       <button class="btn-logout" onclick="logout()">Sair</button>
     </div>
   </div>
@@ -599,11 +866,11 @@
         <div class="date-sep">hoje</div>
       </div>
       <div class="input-area">
-        <div class="input-row">
+        <div class="input-row" id="input-row">
           <div class="input-prefix" id="input-prefix">#</div>
           <input type="text" id="msg-input" placeholder="Escreva uma mensagem..."
             onkeydown="if(event.key==='Enter') sendMessage()" autocomplete="off" />
-          <button class="send-btn" onclick="sendMessage()">↑</button>
+          <button class="send-btn" id="send-btn" onclick="sendMessage()">↑</button>
         </div>
         <div class="input-hint"><span>Enter</span> para enviar</div>
       </div>
@@ -615,7 +882,6 @@
       <div class="status-dot"></div>
       <span id="status-text">conectado</span>
     </div>
-    <span>ws://localhost:8080</span>
     <span class="statusbar-r">jchat v1.0</span>
   </div>
 </div>
@@ -627,6 +893,7 @@
   let currentChat = { type: 'broadcast', target: 'geral' };
   let messages = [];
   let onlineUsers = [];
+  let token = null;
 
   // ── THEME ──
   function toggleTheme() {
@@ -634,31 +901,36 @@
     const next = html.dataset.theme === 'light' ? 'dark' : 'light';
     html.dataset.theme = next;
     localStorage.setItem('jchat-theme', next);
+    const label = next === 'light' ? '☀ LIGHT' : '☾ DARK';
+    document.querySelectorAll('.theme-btn, .theme-btn-auth').forEach(b => b.textContent = label);
   }
 
-  // restore saved theme
   const saved = localStorage.getItem('jchat-theme');
-  if (saved) document.documentElement.dataset.theme = saved;
-
-  // ── PROTOCOL ──
-  function encodeMsg(type, operation, content) {
-    const d = new Date();
-    const p = n => String(n).padStart(2,'0');
-    const instant = `${p(d.getDate())}/${p(d.getMonth()+1)}/${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
-    let body;
-    if (type === 'REQUEST') {
-      body = JSON.stringify({ content, instant });
-    } else {
-      const i = content.indexOf(':');
-      body = JSON.stringify({ sender: content.substring(0,i), content: content.substring(i+1), instant });
-    }
-    return `${type}\r\n${operation}\r\n\r\n${body}`;
+  if (saved) {
+    document.documentElement.dataset.theme = saved;
+    const label = saved === 'light' ? '☀ LIGHT' : '☾ DARK';
+    document.querySelectorAll('.theme-btn, .theme-btn-auth').forEach(b => b.textContent = label);
   }
 
-  function decodeMsg(raw) {
-    const sep = raw.indexOf('\r\n\r\n');
-    const [type, operation] = raw.substring(0, sep).split('\r\n');
-    return { type, operation, json: JSON.parse(raw.substring(sep + 4)) };
+  // ── RIPPLE ──
+  function addRipple(btn, e) {
+    const rect = btn.getBoundingClientRect();
+    const r = document.createElement('span');
+    r.className = 'ripple';
+    r.style.left = (e ? e.clientX - rect.left : rect.width/2) + 'px';
+    r.style.top  = (e ? e.clientY - rect.top  : rect.height/2) + 'px';
+    btn.appendChild(r);
+    setTimeout(() => r.remove(), 500);
+  }
+
+  // ── TOAST ──
+  let toastTimer;
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
   }
 
   // ── AUTH ──
@@ -669,55 +941,140 @@
     document.getElementById('auth-title').textContent = tab==='login' ? 'Entrar' : 'Criar conta';
     document.getElementById('auth-btn').textContent   = tab==='login' ? 'Entrar →' : 'Criar →';
     document.getElementById('auth-error').textContent = '';
+    document.getElementById('auth-error').className = 'auth-error';
+    clearFieldError(document.getElementById('auth-user'));
+    clearFieldError(document.getElementById('auth-pass'));
   }
 
-  function handleAuth() {
-    const user = document.getElementById('auth-user').value.trim();
-    const pass = document.getElementById('auth-pass').value.trim();
+  function setFieldError(input) {
+    input.classList.add('error');
+  }
+
+  function clearFieldError(input) {
+    input.classList.remove('error');
+  }
+
+  function showAuthError(msg) {
+    const wrap = document.getElementById('auth-wrap');
     const err  = document.getElementById('auth-error');
 
-    if (!user || !pass) { err.textContent = '⚠ preencha todos os campos'; return; }
-    if (user.length < 3) { err.textContent = '⚠ mínimo 3 caracteres'; return; }
+    // shake
+    wrap.classList.remove('shake');
+    void wrap.offsetWidth; // reflow
+    wrap.classList.add('shake');
+    setTimeout(() => wrap.classList.remove('shake'), 500);
 
-    if (ws && ws.readyState !== WebSocket.CLOSED) { ws.onclose = null; ws.close(); }
+    // highlight fields
+    setFieldError(document.getElementById('auth-user'));
+    setFieldError(document.getElementById('auth-pass'));
 
-    currentUser = user;
-    ws = new WebSocket('ws://localhost:8080');
+    // error message
+    err.textContent = '⚠ ' + msg;
+    err.className = 'auth-error visible';
+  }
+
+  function setAuthLoading(loading) {
+    const btn = document.getElementById('auth-btn');
+    btn.disabled = loading;
+    if (loading) {
+      btn.innerHTML = '<span class="spinner"></span>aguardando...';
+    } else {
+      btn.textContent = currentTab === 'login' ? 'Entrar →' : 'Criar →';
+    }
+  }
+
+  async function handleAuth(e) {
+    const btn  = document.getElementById('auth-btn');
+    addRipple(btn, e);
+
+    const user = document.getElementById('auth-user').value.trim();
+    const pass = document.getElementById('auth-pass').value.trim();
+
+    //username
+    if (!user || !pass) { showAuthError('preencha todos os campos'); return; }
+    if (user.length < 3) { showAuthError('mínimo 3 caracteres no username'); return; }
+    if (user.length > 14) { showAuthError('username: máximo 14 caracteres'); return; }
+    if (!/^[a-zA-Z0-9_.#@!\-]+$/.test(user)) { showAuthError('username: caracteres inválidos'); return; }
+    if (/^\d+$/.test(user)) { showAuthError('username: não pode ser só números'); return; }
+
+    //password
+    if (!pass) { showAuthError('preencha a password'); return; }
+    if (pass.length < 5)  { showAuthError('password: mínimo 5 caracteres'); return; }
+    if (pass.length > 14) { showAuthError('password: máximo 14 caracteres'); return; }
+    if (!/^[a-zA-Z0-9#@&!_\-]+$/.test(pass)) { showAuthError('password: caracteres inválidos'); return; }
+    if (!/[a-zA-Z]/.test(pass)) { showAuthError('password: precisa de pelo menos 1 letra'); return; }
+    if (!/[0-9]/.test(pass))    { showAuthError('password: precisa de pelo menos 1 número'); return; }
+
+    setAuthLoading(true);
+
+    try {
+      const op  = currentTab === 'login' ? 'login' : 'signup';
+      const res = await fetch(`http://localhost:8080/auth/${op}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: user, password: pass })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        showAuthError(data.error || 'erro de autenticação');
+        setAuthLoading(false);
+        return;
+      }
+
+      token = data.token;
+      currentUser = data.name;
+      setAuthLoading(false);
+      connectWs();
+    } catch (err) {
+      showAuthError('não foi possível conectar ao servidor');
+      setAuthLoading(false);
+    }
+  }
+
+  function togglePass() {
+    const input = document.getElementById('auth-pass');
+    const btn   = document.getElementById('toggle-pass-btn');
+    input.type  = input.type === 'password' ? 'text' : 'password';
+    btn.textContent = input.type === 'password' ? 'SHOW' : 'HIDE';
+  }
+
+  // ── WEBSOCKET ──
+  function connectWs() {
+    ws = new WebSocket(`ws://localhost:8081?token=${token}`);
 
     ws.onopen = () => {
-      const op = currentTab === 'login' ? 'AUTH_LOGIN' : 'AUTH_SIGNUP';
-      ws.send(encodeMsg('REQUEST', op, user + ':' + pass));
+      document.getElementById('auth-screen').style.display = 'none';
+      document.getElementById('app').classList.add('visible');
+      document.getElementById('header-username').textContent = currentUser;
+      setConnected(true);
+      updateMeta();
+      showToast('conectado ao chat');
     };
 
     ws.onmessage = (event) => {
       try {
-        const { type, operation, json } = decodeMsg(event.data);
-        if (type === 'RESPONSE') {
-          if (json.status === 201) {
-            document.getElementById('auth-screen').style.display = 'none';
-            document.getElementById('app').classList.add('visible');
-            document.getElementById('header-username').textContent = user;
-            setConnected(true);
-            updateMeta();
-          } else {
-            err.textContent = '⚠ ' + (json.content || 'erro');
-            ws.close();
-          }
-          return;
-        }
-        if (type === 'CHAT') onChatMsg(operation, json);
+        const json = JSON.parse(event.data);
+        onChatMsg(json);
       } catch(e) {
-        console.error('[WS]', e, event.data);
+        console.error('[WS] parse error:', e);
       }
     };
 
-    ws.onclose = (e) => { console.log('[WS] close', e.code); setConnected(false); };
-    ws.onerror = ()  => { setConnected(false); err.textContent = '⚠ erro de conexão'; };
+    ws.onclose = (e) => {
+      console.log('[WS] close', e.code);
+      setConnected(false);
+      showToast('conexão encerrada');
+    };
+
+    ws.onerror = () => setConnected(false);
   }
 
   function logout() {
     if (ws) { ws.onclose = null; ws.close(); }
-    ws = null; currentUser = null; messages = []; onlineUsers = [];
+    ws = null; currentUser = null; token = null;
+    messages = []; onlineUsers = [];
     currentChat = { type: 'broadcast', target: 'geral' };
     document.getElementById('auth-screen').style.display = 'flex';
     document.getElementById('app').classList.remove('visible');
@@ -726,72 +1083,80 @@
     document.getElementById('online-count').textContent = '1';
     document.getElementById('auth-user').value = '';
     document.getElementById('auth-pass').value = '';
+    document.getElementById('auth-error').textContent = '';
   }
 
   // ── CHAT ──
-  function onChatMsg(operation, json) {
+  function onChatMsg(json) {
     const isServer = json.sender === 'SERVER';
-    const isPm = operation === 'PRIVATE_MESSAGE';
+    const isPm = json.type === 'PRIVATE';
 
-    // ONLINE_LIST — atualiza sidebar, não mostra no chat
-    if (isServer && typeof json.content === 'string' && json.content.startsWith('ONLINE_LIST:')) {
-      json.content.substring(12).split(',').forEach(u => {
-        u = u.trim();
-        if (u && u !== currentUser && !onlineUsers.includes(u)) onlineUsers.push(u);
-      });
+    if (isServer && json.content && json.content.startsWith('ONLINE_LIST:')) {
+      onlineUsers = json.content.substring(12).split(',').map(u => u.trim()).filter(Boolean);
       renderSidebar();
       return;
     }
 
-    // joined / left
-    if (isServer && typeof json.content === 'string') {
-      const jm = json.content.match(/^(\w+) joined/);
-      const lm = json.content.match(/^(\w+) left/);
+    if (isServer) {
+      const jm = json.content && json.content.match(/^(\w+) joined/);
+      const lm = json.content && json.content.match(/^(\w+) left/);
       if (jm && jm[1] !== currentUser && !onlineUsers.includes(jm[1])) {
         onlineUsers.push(jm[1]);
-        renderSidebar();
+        renderSidebar(jm[1]);
+        showToast(jm[1] + ' entrou no chat');
       }
       if (lm) {
         onlineUsers = onlineUsers.filter(u => u !== lm[1]);
         renderSidebar();
+        showToast(lm[1] + ' saiu do chat');
       }
     }
 
-    // Para PM: o servidor manda sender:texto, onde sender é quem enviou
-    // O content já vem sem o prefixo de destinatário (o servidor remove)
+    // PM: remove prefixo do target do content
     let displayText = json.content;
-    if (isPm && typeof json.content === 'string' && json.content.includes(':')) {
-      displayText = json.content.substring(json.content.indexOf(':') + 1);
-    }
 
     const m = {
       type: isServer ? 'server' : isPm ? 'pm' : 'broadcast',
       from: json.sender,
-      to: isPm ? currentUser : 'geral',
+      to:   isPm ? currentUser : 'geral',
       text: displayText,
-      time: nowTime(),
+      time: json.instant ? json.instant.substring(11, 16) : nowTime(),
       self: false,
     };
 
     messages.push(m);
+
+    // notifica PM não ativa
+    if (m.type === 'pm' && currentChat.target !== m.from) {
+      const el = document.querySelector(`.sidebar-item[data-user="${m.from}"]`);
+      if (el) el.classList.add('new-msg');
+    }
+
     if (shouldShow(m)) { appendMsg(m); scrollBottom(); }
   }
 
-  function sendMessage() {
+  function sendMessage(e) {
     const input = document.getElementById('msg-input');
     const text = input.value.trim();
     if (!text || !ws || ws.readyState !== WebSocket.OPEN) return;
 
-    if (currentChat.type === 'pm') {
-      ws.send(encodeMsg('CHAT', 'PRIVATE_MESSAGE',
-        currentUser + ':' + currentChat.target + ':' + text));
-    } else {
-      ws.send(encodeMsg('CHAT', 'BROADCAST', currentUser + ':' + text));
-    }
+    // ripple no botão
+    const btn = document.getElementById('send-btn');
+    addRipple(btn, e);
 
-    // append local para os dois tipos
+    // flash no input
+    const row = document.getElementById('input-row');
+    row.classList.add('sending');
+    setTimeout(() => row.classList.remove('sending'), 200);
+
+    const isPm = currentChat.type === 'pm';
+    ws.send(JSON.stringify(isPm
+      ? { type: 'PRIVATE', target: currentChat.target, content: text }
+      : { type: 'GERAL', content: text }
+    ));
+
     const m = {
-      type: currentChat.type === 'pm' ? 'pm' : 'broadcast',
+      type: isPm ? 'pm' : 'broadcast',
       from: currentUser,
       to: currentChat.target,
       text,
@@ -799,16 +1164,17 @@
       self: true,
     };
     messages.push(m);
-    appendMsg(m);
+    if (shouldShow(m)) { appendMsg(m); scrollBottom(); }
     input.value = '';
-    scrollBottom();
   }
 
   // ── NAV ──
   function selectUser(username) {
     currentChat = { type: 'pm', target: username };
-    document.querySelectorAll('.sidebar-item[data-user]').forEach(el =>
-      el.classList.toggle('active', el.dataset.user === username));
+    document.querySelectorAll('.sidebar-item[data-user]').forEach(el => {
+      el.classList.toggle('active', el.dataset.user === username);
+      if (el.dataset.user === username) el.classList.remove('new-msg');
+    });
     document.getElementById('ch-geral').classList.remove('active');
     document.getElementById('chat-type').textContent = 'PRIVADO';
     document.getElementById('chat-type').className = 'chat-type pm';
@@ -831,13 +1197,15 @@
   }
 
   // ── RENDER ──
-  function renderSidebar() {
+  function renderSidebar(justJoined) {
     const list = document.getElementById('user-list');
     list.innerHTML = '';
     const others = onlineUsers.filter(u => u !== currentUser);
     others.forEach(u => {
       const el = document.createElement('div');
-      el.className = 'sidebar-item' + (currentChat.type==='pm' && currentChat.target===u ? ' active' : '');
+      el.className = 'sidebar-item' +
+        (currentChat.type==='pm' && currentChat.target===u ? ' active' : '') +
+        (u === justJoined ? ' just-joined' : '');
       el.dataset.user = u;
       el.innerHTML = `<div class="user-dot"></div><span>${esc(u)}</span>`;
       el.onclick = () => selectUser(u);
@@ -881,7 +1249,7 @@
   function shouldShow(m) {
     if (currentChat.type === 'broadcast') return m.type === 'broadcast' || m.type === 'server';
     return m.type === 'pm' && (
-      (m.from === currentUser   && m.to === currentChat.target) ||
+      (m.from === currentUser && m.to === currentChat.target) ||
       (m.from === currentChat.target && m.to === currentUser)
     );
   }
